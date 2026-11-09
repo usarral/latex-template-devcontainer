@@ -86,9 +86,9 @@ Una plantilla es una carpeta en `plantillas/`:
 
 ```
 plantillas/memoria-tfg/
-├── plantilla.conf     DESCRIPCION="..."
+├── plantilla.conf     DESCRIPCION="...", lo que sale en el menú
 ├── documento.tex      admite {{TITULO}}, {{AUTOR}}, {{NOMBRE}}, {{FECHA}}
-└── referencias.bib    opcional, se copia tal cual
+└── referencias.bib    opcional; si está, se copia al documento nuevo
 ```
 
 En cuanto existe la carpeta, `./doc nuevo` la ofrece en el menú. Cualquier otro
