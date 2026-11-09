@@ -1,0 +1,53 @@
+# Paquetes de TeX Live que se instalan en la imagen.
+# Añadir uno por línea y reconstruir el contenedor ("Rebuild Container").
+# tlmgr resuelve las dependencias, no hace falta listarlas.
+
+# --- Base ---
+latex
+latex-bin
+latexmk
+l3packages      # xparse, lo piden tcolorbox y biblatex
+
+# --- Idioma ---
+babel
+babel-spanish
+hyphen-spanish
+
+# --- Fuentes ---
+lm
+lm-math
+amsmath
+amsfonts
+
+# --- Maquetación ---
+geometry
+fancyhdr
+parskip
+
+# --- Contenido ---
+graphics
+graphics-def
+graphics-cfg
+xcolor
+colortbl        # lo pide xcolor con la opción table
+tcolorbox
+pgf
+tikzfill
+pdfcol
+environ
+trimspaces
+etoolbox
+tools
+listings
+listingsutf8    # lo pide la librería de listados de tcolorbox
+hyperref
+csquotes        # comillas por idioma, recomendado por biblatex
+
+# --- Bibliografía ---
+biblatex
+logreq
+biber
+
+# --- Herramientas del editor (linting y formateo) ---
+chktex
+latexindent

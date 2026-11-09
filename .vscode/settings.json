@@ -1,0 +1,24 @@
+{
+    "files.eol": "\n",
+    "files.associations": {
+        "*.tex": "latex"
+    },
+    "editor.formatOnSave": true,
+
+    "latex-workshop.latex.outDir": "./out",
+    "latex-workshop.latex.recipe.default": "latexmk",
+    "latex-workshop.latex.autoClean.run": "never",
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.synctex.afterBuild.enabled": true,
+
+    "latex-workshop.linting.chktex.enabled": true,
+    "latex-workshop.linting.chktex.exec.path": "chktex",
+
+    "latex-workshop.latexindent.path": "latexindent",
+    "latex-workshop.latexindent.args": [
+        "-c",
+        "%DIR%/",
+        "%TMPFILE%",
+        "-y=defaultIndent: '%INDENT%'"
+    ]
+}

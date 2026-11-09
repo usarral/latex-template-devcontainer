@@ -1,0 +1,33 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Se compila con la misma imagen del devcontainer, así la CI y el entorno
+      # local no pueden divergir.
+      - name: Construir la imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: .devcontainer
+          file: .devcontainer/Dockerfile
+          tags: latex-template:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Compilar el PDF
+        run: docker run --rm -v "$PWD:/workspace" -w /workspace latex-template:ci make pdf
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pdf
+          path: out/*.pdf
+          if-no-files-found: error

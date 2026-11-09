@@ -1,24 +1,69 @@
-\documentclass[a4paper,12pt]{article} %Tipo de documento
+\documentclass[a4paper,12pt]{article}
 
-%Insercion de paquetes.
-\usepackage[utf8]{inputenc}
-\usepackage[spanish]{babel}
-\usepackage{graphicx} %Inserción de imágenes.
-\usepackage[table,xcdraw]{xcolor} %Detecicon de colores.
-\usepackage[most]{tcolorbox} %Para el cuadrado del nombre.
-\usepackage{fancyhdr} %Estilo de Página.
-\usepackage[hidelinks]{hyperref} %Gestion de hypervinculos.
-\usepackage{parskip} %Arreglo de la sangría del documento.
-\usepackage{geometry}
-\usepackage{listings}
+%=============================================
+% Datos del documento
+%=============================================
+\newcommand{\Nombre}{NOMBRE AUTOR}
+\newcommand{\Proyecto}{NOMBRE PROYECTO}
+
+%=============================================
+% Codificación y fuentes
+%=============================================
+% LaTeX asume UTF-8 desde 2018, así que inputenc ya no hace falta.
+% lmodern va antes de fontenc: si no, fontenc fija Computer Modern y pide
+% fuentes de mapa de bits (ec*) que esta imagen no trae.
+\usepackage{lmodern}                 % fuentes vectoriales
 \usepackage[T1]{fontenc}
-\usepackage[backend=biber]{biblatex}
+\usepackage[spanish,es-tabla]{babel} % es-tabla: "Tabla" en vez de "Cuadro"
 
-%Variables para insertar codigo.
+%=============================================
+% Maquetación
+%=============================================
+\usepackage{parskip}                 % separa párrafos en vez de sangrarlos
+\usepackage{geometry}
+\usepackage{fancyhdr}
+
+\geometry{
+    a4paper,
+    left=20mm,
+    right=20mm,
+    top=20mm,
+    bottom=20mm,
+    headheight=17pt,
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\Proyecto}
+\rhead{\Nombre}
+\cfoot{\thepage}
+
+%=============================================
+% Contenido
+%=============================================
+\usepackage{graphicx}                % inserción de imágenes
+\usepackage[table,xcdraw]{xcolor}    % color en texto y tablas
+\usepackage[most]{tcolorbox}         % cajas destacadas
+\usepackage{listings}                % listados de código
+\usepackage{csquotes}                % comillas según el idioma, lo pide biblatex
+% plainpages y pdfpagelabels evitan avisos de destinos duplicados al mezclar
+% numeración romana y árabe.
+\usepackage[hidelinks,plainpages=false,pdfpagelabels]{hyperref} % casi al final a propósito
+\usepackage[backend=biber]{biblatex}
+\addbibresource{referencias.bib}
+
+%=============================================
+% Colores
+%=============================================
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{HTML}{59b300}
+\definecolor{codepurple}{HTML}{59B300}
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{orangePortada}{HTML}{E84C22}
+
+%=============================================
+% Estilo de los listados de código
+%=============================================
 \lstdefinestyle{mystyle}{
     backgroundcolor=\color{backcolour},
     commentstyle=\color{codegreen},
@@ -35,64 +80,51 @@
     showspaces=false,
     showstringspaces=false,
     showtabs=false,
-    tabsize=2
-    }
-    \lstset{style=mystyle}
-    %Fin variables de codigo
-    
-    %Variables extras.
-    \definecolor{black}{HTML}{000000}
-    \definecolor{orangePortada}{HTML}{E84C22}
-    
-    \geometry{
-        a4paper,
-left=20mm,
-right=20mm,
-top=20mm,
-bottom=20mm,
-headheight=17pt,
+    tabsize=2,
 }
-\bibliography{referencias}
-\fancyhf{}
-\pagestyle{fancy}
-\lhead{\Proyecto}
-\rhead{\Nombre}
+\lstset{style=mystyle}
+
 \renewcommand{\lstlistingname}{Conjunto de comandos}
 \renewcommand{\labelenumii}{\Roman{enumii}}
 
-
 %=============================================
-\newcommand{\Nombre}{NOMBRE AUTOR}
-\newcommand{\Proyecto}{NOMBRE PROYECTO}
-%=============================================
-%Incio de documento.
 \begin{document}
-\cfoot{\thepage}
-%Inicio de Portada.
+
+%--- Portada --------------------------------
+% La portada sin numerar: evita que comparta el número "1" con el cuerpo y
+% genere destinos duplicados en el PDF.
+\pagenumbering{gobble}
 \begin{titlepage}
     \begin{center}
         \huge\textbf{\Proyecto}
     \end{center}
     \hfill{}
-    %Línea naranja
+    % Línea naranja
     {\color{orangePortada}\hrule}
     \vfill{}
     \begin{center}
-        % \includegraphics[width=0.8\textwidth]{}
+        % \includegraphics[width=0.8\textwidth]{imagenes/portada.png}
     \end{center}
     \vfill{}
     \begin{center}
-        {\large{} \Nombre}
+        {\large \Nombre}
     \end{center}
 \end{titlepage}
-%Fin de portada.
-%Inicio índice
-\clearpage{}
-\tableofcontents{}
+
+%--- Índice ---------------------------------
+\clearpage
+\pagenumbering{roman}
+\tableofcontents
 \thispagestyle{empty}
-\clearpage{}
-%Fin del índice
-Prueba \LaTeX{}
-\printbibliography{}
+\clearpage
+
+%--- Contenido ------------------------------
+\pagenumbering{arabic}
+\section{Introducción}
+
+Primer párrafo del documento. Una cita de ejemplo: \cite{knuth1984}.
+
+%--- Bibliografía ---------------------------
+\printbibliography
 
 \end{document}
