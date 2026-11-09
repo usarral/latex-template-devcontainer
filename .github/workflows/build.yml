@@ -23,11 +23,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Compilar el PDF
-        run: docker run --rm -v "$PWD:/workspace" -w /workspace latex-template:ci make pdf
+      - name: Compilar todos los documentos
+        run: docker run --rm -v "$PWD:/workspace" -w /workspace latex-template:ci ./doc compila
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pdf
+          name: pdfs
           path: out/*.pdf
           if-no-files-found: error

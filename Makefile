@@ -1,16 +1,19 @@
-# Compila dentro del devcontainer (o en cualquier sitio con latexmk y biber).
-DOC ?= index
+# Atajos sobre ./doc, que es donde está la lógica.
+DOC ?=
 
-.PHONY: pdf watch clean help
+.PHONY: pdf clean lista nuevo help
 
-pdf: ## Compila el PDF en out/
-	latexmk -pdf $(DOC).tex
+pdf: ## Compila todos los documentos (o uno: make pdf DOC=informe)
+	@./doc compila $(DOC)
 
-watch: ## Recompila al guardar
-	latexmk -pdf -pvc $(DOC).tex
+clean: ## Borra auxiliares y PDF
+	@./doc limpia $(DOC)
 
-clean: ## Borra los auxiliares y el PDF
-	latexmk -C $(DOC).tex
+lista: ## Lista documentos y plantillas
+	@./doc lista
+
+nuevo: ## Crea un documento (interactivo)
+	@./doc nuevo
 
 help: ## Muestra esta ayuda
 	@grep -hE '^[a-z]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'

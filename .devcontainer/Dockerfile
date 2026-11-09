@@ -1,14 +1,20 @@
 FROM docker.io/library/alpine:3.24
 
-# Espejo CTAN desde el que se instala TeX Live. Si va lento o está caído:
+# Espejo CTAN desde el que se instala TeX Live (Universidad de Zaragoza).
+# Si va lento o está caído:
 #   --build-arg TLMIRROR=https://<espejo>/systems/texlive/tlnet
 # Lista de espejos: https://ctan.org/mirrors
-ARG TLMIRROR=https://ftp.fau.de/ctan/systems/texlive/tlnet
+ARG TLMIRROR=https://softlibre.unizar.es/tex-archive/systems/texlive/tlnet
 ARG TLDIR=/usr/local/texlive
 ARG TLPLATFORM=x86_64-linuxmusl
 
+# TEXINPUTS/BIBINPUTS incluyen comun/ para que cualquier documento encuentre
+# plantilla.sty esté donde esté. Se compila desde la carpeta del documento, así
+# que "." cubre sus imágenes y su .bib.
 ENV PATH="${TLDIR}/bin/${TLPLATFORM}:${PATH}" \
-    LANG=C.UTF-8
+    LANG=C.UTF-8 \
+    TEXINPUTS=".:/workspace/comun//:" \
+    BIBINPUTS=".:/workspace/comun//:"
 
 # perl            -> latexmk y latexindent son scripts perl
 # perl-yaml-tiny y

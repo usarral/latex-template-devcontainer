@@ -1,0 +1,180 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{plantilla}[2026/11/09 v1.0 Preambulo comun de los documentos]
+
+% Opción "bibliografia": carga biblatex y el referencias.bib del documento.
+% Sin ella no se arrastra biber en documentos que no citan nada.
+\newif\ifplantilla@bib
+\DeclareOption{bibliografia}{\plantilla@bibtrue}
+\DeclareOption*{\PackageWarning{plantilla}{Opcion desconocida: \CurrentOption}}
+\ProcessOptions\relax
+
+%=============================================
+% Fuentes e idioma
+%=============================================
+% lmodern antes de fontenc: si no, fontenc fija Computer Modern y pide fuentes
+% de mapa de bits que la imagen no trae.
+\RequirePackage{lmodern}
+\RequirePackage[T1]{fontenc}
+\RequirePackage[spanish,es-tabla]{babel}
+
+%=============================================
+% Maquetación
+%=============================================
+\RequirePackage{parskip}
+\RequirePackage{geometry}
+\RequirePackage{fancyhdr}
+
+\geometry{
+    a4paper,
+    left=20mm,
+    right=20mm,
+    top=20mm,
+    bottom=20mm,
+    headheight=17pt,
+}
+
+%=============================================
+% Contenido
+%=============================================
+\RequirePackage{graphicx}
+\RequirePackage[table,xcdraw]{xcolor}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{listings}
+\RequirePackage{csquotes}
+% plainpages y pdfpagelabels evitan avisos de destinos duplicados al mezclar
+% numeración romana y árabe.
+\RequirePackage[hidelinks,plainpages=false,pdfpagelabels]{hyperref}
+
+\ifplantilla@bib
+    \RequirePackage[backend=biber]{biblatex}
+    \addbibresource{referencias.bib}
+\fi
+
+%=============================================
+% Colores
+%=============================================
+\definecolor{naranjaPortada}{HTML}{E84C22}
+\definecolor{azulNota}{HTML}{1F6FB2}
+\definecolor{rojoAviso}{HTML}{C0392B}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{HTML}{59B300}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+%=============================================
+% Datos del documento
+%=============================================
+\newcommand{\plantilla@titulo}{Sin titulo}
+\newcommand{\plantilla@autor}{}
+\newcommand{\plantilla@subtitulo}{}
+\newcommand{\plantilla@fecha}{\today}
+\newcommand{\plantilla@imagen}{}
+
+\newif\ifplantilla@haysubtitulo
+\newif\ifplantilla@hayimagen
+
+\newcommand{\titulo}[1]{\renewcommand{\plantilla@titulo}{#1}}
+\newcommand{\autor}[1]{\renewcommand{\plantilla@autor}{#1}}
+\newcommand{\fecha}[1]{\renewcommand{\plantilla@fecha}{#1}}
+\newcommand{\subtitulo}[1]{%
+    \plantilla@haysubtitulotrue\renewcommand{\plantilla@subtitulo}{#1}}
+% Imagen de portada: \imagenportada{imagenes/foo.png}
+\newcommand{\imagenportada}[1]{%
+    \plantilla@hayimagentrue\renewcommand{\plantilla@imagen}{#1}}
+
+% Accesores públicos: dentro de un .tex no se puede escribir \plantilla@titulo
+% porque la @ no es una letra fuera de un .sty.
+\newcommand{\eltitulo}{\plantilla@titulo}
+\newcommand{\elautor}{\plantilla@autor}
+\newcommand{\lafecha}{\plantilla@fecha}
+
+%=============================================
+% Encabezados
+%=============================================
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\plantilla@titulo}
+\rhead{\plantilla@autor}
+\cfoot{\thepage}
+
+%=============================================
+% Portada e índice
+%=============================================
+% La portada va sin numerar: evita compartir el número "1" con el cuerpo y
+% generar destinos duplicados en el PDF.
+\newcommand{\portada}{%
+    \pagenumbering{gobble}%
+    \begin{titlepage}
+        \begin{center}
+            \huge\textbf{\plantilla@titulo}
+        \end{center}
+        \hfill{}
+        {\color{naranjaPortada}\hrule}
+        \ifplantilla@haysubtitulo
+            \vspace{1.5em}
+            \begin{center}
+                \large\plantilla@subtitulo
+            \end{center}
+        \fi
+        \vfill{}
+        \ifplantilla@hayimagen
+            \begin{center}
+                \includegraphics[width=0.8\textwidth]{\plantilla@imagen}
+            \end{center}
+            \vfill{}
+        \fi
+        \begin{center}
+            {\large \plantilla@autor}
+
+            \vspace{0.5em}
+            {\plantilla@fecha}
+        \end{center}
+    \end{titlepage}%
+}
+
+\newcommand{\indice}{%
+    \clearpage
+    \pagenumbering{roman}%
+    \tableofcontents
+    \thispagestyle{empty}
+    \clearpage
+    \pagenumbering{arabic}%
+}
+
+%=============================================
+% Listados de código
+%=============================================
+\lstdefinestyle{plantilla}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+}
+\lstset{style=plantilla}
+
+\renewcommand{\lstlistingname}{Conjunto de comandos}
+\renewcommand{\labelenumii}{\Roman{enumii}}
+
+%=============================================
+% Cajas destacadas: \begin{nota} ... \end{nota}
+%=============================================
+\newtcolorbox{nota}[1][Nota]{%
+    colback=azulNota!5, colframe=azulNota, coltitle=white,
+    fonttitle=\bfseries, title=#1, breakable}
+\newtcolorbox{aviso}[1][Aviso]{%
+    colback=rojoAviso!5, colframe=rojoAviso, coltitle=white,
+    fonttitle=\bfseries, title=#1, breakable}
+
+\endinput

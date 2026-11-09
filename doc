@@ -1,0 +1,243 @@
+#!/usr/bin/env bash
+# CLI de la plantilla. Sin argumentos muestra la ayuda.
+set -euo pipefail
+
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOCUMENTOS="$RAIZ/documentos"
+PLANTILLAS="$RAIZ/plantillas"
+SALIDA="$RAIZ/out"
+
+rojo()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }
+verde() { printf '\033[32m%s\033[0m\n' "$*"; }
+gris()  { printf '\033[90m%s\033[0m\n' "$*"; }
+abortar() { rojo "error: $*"; exit 1; }
+
+# Sustituye {{CLAVE}} sin pasar por sed, que se atraganta con /, & o \ en los
+# valores que teclea el usuario.
+reemplazar() {
+  local texto="$1" clave="$2" valor="$3"
+  printf '%s' "${texto//\{\{$clave\}\}/$valor}"
+}
+
+listar_plantillas() {
+  local d
+  for d in "$PLANTILLAS"/*/; do
+    [ -d "$d" ] || continue
+    basename "$d"
+  done
+}
+
+descripcion_plantilla() {
+  local conf="$PLANTILLAS/$1/plantilla.conf"
+  # shellcheck disable=SC1090
+  [ -f "$conf" ] && (DESCRIPCION=""; . "$conf"; printf '%s' "$DESCRIPCION")
+}
+
+listar_documentos() {
+  local d
+  for d in "$DOCUMENTOS"/*/; do
+    [ -d "$d" ] || continue
+    basename "$d"
+  done
+}
+
+# Nombre apto para carpeta y para \input: minúsculas, sin espacios ni acentos.
+normalizar() {
+  printf '%s' "$1" \
+    | tr '[:upper:]' '[:lower:]' \
+    | sed -e 'y/áéíóúñü/aeiounu/' -e 's/[^a-z0-9-]\+/-/g' -e 's/^-\+//' -e 's/-\+$//'
+}
+
+preguntar() {
+  local pregunta="$1" porDefecto="${2:-}" respuesta
+  if [ -n "$porDefecto" ]; then
+    read -r -p "$pregunta [$porDefecto]: " respuesta
+    printf '%s' "${respuesta:-$porDefecto}"
+  else
+    read -r -p "$pregunta: " respuesta
+    printf '%s' "$respuesta"
+  fi
+}
+
+#=============================================
+cmd_nuevo() {
+  local plantilla="" nombre="" titulo="" autor=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --plantilla) plantilla="$2"; shift 2 ;;
+      --nombre)    nombre="$2";    shift 2 ;;
+      --titulo)    titulo="$2";    shift 2 ;;
+      --autor)     autor="$2";     shift 2 ;;
+      *) abortar "opción desconocida: $1" ;;
+    esac
+  done
+
+  if [ -z "$plantilla" ]; then
+    echo "Plantillas disponibles:"
+    local i=1 opciones=()
+    while IFS= read -r p; do
+      opciones+=("$p")
+      printf '  %d) %-12s %s\n' "$i" "$p" "$(descripcion_plantilla "$p")"
+      i=$((i + 1))
+    done < <(listar_plantillas)
+    [ ${#opciones[@]} -gt 0 ] || abortar "no hay plantillas en plantillas/"
+    local eleccion
+    eleccion="$(preguntar "Elige una" "1")"
+    if [[ "$eleccion" =~ ^[0-9]+$ ]] && [ "$eleccion" -ge 1 ] && [ "$eleccion" -le ${#opciones[@]} ]; then
+      plantilla="${opciones[$((eleccion - 1))]}"
+    else
+      plantilla="$eleccion"
+    fi
+  fi
+  [ -d "$PLANTILLAS/$plantilla" ] || abortar "no existe la plantilla '$plantilla'"
+
+  [ -n "$titulo" ] || titulo="$(preguntar "Título del documento")"
+  [ -n "$titulo" ] || abortar "el título no puede estar vacío"
+
+  if [ -z "$autor" ]; then
+    autor="$(preguntar "Autor" "$(git -C "$RAIZ" config user.name 2>/dev/null || echo '')")"
+  fi
+
+  [ -n "$nombre" ] || nombre="$(preguntar "Nombre de la carpeta" "$(normalizar "$titulo")")"
+  nombre="$(normalizar "$nombre")"
+  [ -n "$nombre" ] || abortar "el nombre no puede estar vacío"
+  [ ! -e "$DOCUMENTOS/$nombre" ] || abortar "ya existe documentos/$nombre"
+
+  local destino="$DOCUMENTOS/$nombre"
+  mkdir -p "$destino/imagenes"
+  touch "$destino/imagenes/.gitkeep"
+
+  local contenido
+  contenido="$(cat "$PLANTILLAS/$plantilla/documento.tex")"
+  contenido="$(reemplazar "$contenido" TITULO "$titulo")"
+  contenido="$(reemplazar "$contenido" AUTOR "$autor")"
+  contenido="$(reemplazar "$contenido" NOMBRE "$nombre")"
+  contenido="$(reemplazar "$contenido" FECHA "$(date +%Y-%m-%d)")"
+  printf '%s\n' "$contenido" > "$destino/$nombre.tex"
+
+  [ -f "$PLANTILLAS/$plantilla/referencias.bib" ] \
+    && cp "$PLANTILLAS/$plantilla/referencias.bib" "$destino/referencias.bib"
+
+  verde "Creado documentos/$nombre a partir de la plantilla '$plantilla'."
+  gris  "  compilar: ./doc compila $nombre     (el PDF sale en out/$nombre.pdf)"
+}
+
+#=============================================
+cmd_compila() {
+  local verboso=0
+  if [ "${1:-}" = "-v" ] || [ "${1:-}" = "--verbose" ]; then verboso=1; shift; fi
+
+  local docs=("$@")
+  [ ${#docs[@]} -gt 0 ] || mapfile -t docs < <(listar_documentos)
+  [ ${#docs[@]} -gt 0 ] || abortar "no hay documentos; crea uno con './doc nuevo'"
+
+  mkdir -p "$SALIDA"
+  local d fallos=0 log
+  log="$(mktemp)"
+  trap 'rm -f "$log"' RETURN
+
+  for d in "${docs[@]}"; do
+    [ -f "$DOCUMENTOS/$d/$d.tex" ] || abortar "no existe documentos/$d/$d.tex"
+    if ( cd "$DOCUMENTOS/$d" \
+         && TEXINPUTS=".:$RAIZ/comun//:${TEXINPUTS:-}" \
+            BIBINPUTS=".:$RAIZ/comun//:${BIBINPUTS:-}" \
+            latexmk -r "$RAIZ/.latexmkrc" -outdir="$SALIDA" "$d.tex" ) >"$log" 2>&1; then
+      verde "  out/$d.pdf"
+      [ "$verboso" -eq 1 ] && cat "$log"
+    else
+      rojo "  falló $d"
+      # Con -file-line-error los errores salen como fichero.tex:12: mensaje.
+      grep -E '^([./][^ ]*:[0-9]+:|! )' "$log" | head -20 >&2 || cat "$log" >&2
+      gris "  (log completo en out/$d.log)"
+      fallos=$((fallos + 1))
+    fi
+  done
+  [ "$fallos" -eq 0 ] || exit 1
+}
+
+#=============================================
+cmd_limpia() {
+  local docs=("$@")
+  [ ${#docs[@]} -gt 0 ] || mapfile -t docs < <(listar_documentos)
+  local d
+  for d in "${docs[@]}"; do
+    [ -d "$DOCUMENTOS/$d" ] || continue
+    # El -r es necesario: las reglas de limpieza (.bbl, .run.xml) están en el
+    # .latexmkrc, que latexmk no encuentra solo al compilar desde otra carpeta.
+    ( cd "$DOCUMENTOS/$d" \
+      && latexmk -r "$RAIZ/.latexmkrc" -C -outdir="$SALIDA" "$d.tex" >/dev/null 2>&1 ) || true
+    echo "limpiado $d"
+  done
+}
+
+#=============================================
+cmd_lista() {
+  echo "Documentos:"
+  local d hay=0
+  while IFS= read -r d; do
+    hay=1
+    if [ -f "$SALIDA/$d.pdf" ]; then
+      printf '  %-24s out/%s.pdf\n' "$d" "$d"
+    else
+      printf '  %-24s %s\n' "$d" "$(gris 'sin compilar')"
+    fi
+  done < <(listar_documentos)
+  [ "$hay" -eq 1 ] || echo "  (ninguno)"
+
+  echo
+  echo "Plantillas:"
+  while IFS= read -r d; do
+    printf '  %-24s %s\n' "$d" "$(descripcion_plantilla "$d")"
+  done < <(listar_plantillas)
+}
+
+#=============================================
+cmd_repo() {
+  local nombre="${1:-}" visibilidad="${2:---private}"
+  [ -n "$nombre" ] || abortar "uso: ./doc repo <nombre> [--public|--private]"
+  command -v gh >/dev/null || abortar "hace falta gh (https://cli.github.com)"
+
+  local origen
+  origen="$(git -C "$RAIZ" remote get-url origin 2>/dev/null || true)"
+  [ -n "$origen" ] || abortar "este repo no tiene remoto 'origin'"
+  # git@github.com:usuario/repo.git -> usuario/repo
+  origen="${origen#*github.com[:/]}"
+  origen="${origen%.git}"
+
+  echo "Creando $nombre a partir de la plantilla $origen..."
+  gh repo create "$nombre" --template "$origen" "$visibilidad" --clone
+  verde "Listo. Abre $nombre en VS Code y acepta 'Reopen in Container'."
+}
+
+#=============================================
+ayuda() {
+  cat <<'AYUDA'
+Uso: ./doc <comando>
+
+  nuevo [--plantilla X --nombre Y --titulo "..." --autor "..."]
+        Crea un documento en documentos/. Sin argumentos, pregunta.
+
+  compila [-v] [nombre...]
+        Compila los documentos indicados (o todos). -v muestra el log.
+  limpia  [nombre...]    Borra auxiliares y PDF.
+  lista                  Documentos y plantillas disponibles.
+  repo <nombre> [--public|--private]
+                         Crea un repo nuevo en GitHub desde esta plantilla.
+
+Las plantillas viven en plantillas/<nombre>/ y se pueden añadir a mano:
+una carpeta con documento.tex (admite {{TITULO}}, {{AUTOR}}, {{NOMBRE}},
+{{FECHA}}) y un plantilla.conf con DESCRIPCION.
+AYUDA
+}
+
+comando="${1:-ayuda}"
+[ $# -gt 0 ] && shift || true
+case "$comando" in
+  nuevo)   cmd_nuevo "$@" ;;
+  compila) cmd_compila "$@" ;;
+  limpia)  cmd_limpia "$@" ;;
+  lista)   cmd_lista "$@" ;;
+  repo)    cmd_repo "$@" ;;
+  ayuda|-h|--help) ayuda ;;
+  *) rojo "comando desconocido: $comando"; echo; ayuda; exit 1 ;;
+esac

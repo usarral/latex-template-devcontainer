@@ -28,8 +28,8 @@ out/*
 *.xdv
 missfont.log
 
-# El PDF compilado tampoco: se descarga de la CI o se genera en local.
-*.pdf
+# Los PDF compilados viven en out/, ya ignorado arriba. No se ignora *.pdf en
+# general porque las figuras de los documentos suelen estar en ese formato.
 
 # Editores y sistema
 *.bak
