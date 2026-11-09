@@ -11,7 +11,13 @@
 set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGEN="latex-template:dev"
+
+# La etiqueta lleva el nombre de la carpeta: cada repo creado desde esta
+# plantilla tiene su propia imagen y no reutiliza la de otro con una lista de
+# paquetes distinta.
+NOMBRE="$(printf '%s' "$(basename "$RAIZ")" \
+          | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_.-' '-')"
+IMAGEN="${NOMBRE}:dev"
 
 if command -v podman >/dev/null; then
   MOTOR=podman
