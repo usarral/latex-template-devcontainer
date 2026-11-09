@@ -17,8 +17,23 @@ Este repo es una *template repository* de GitHub, así que hay dos caminos:
 ./doc repo apuntes-2027 --private    # crea el repo en GitHub y lo clona
 ```
 
-o el botón **Use this template** en GitHub. En ambos casos se abre en VS Code,
-se acepta *Reopen in Container* y ya se puede escribir.
+o el botón **Use this template** en GitHub.
+
+## Arrancar el entorno
+
+Con VS Code: abrir la carpeta y aceptar *Reopen in Container*.
+
+Sin VS Code, `dev.sh` construye la imagen la primera vez y abre una shell
+dentro, con podman o con docker:
+
+```sh
+./dev.sh                  # shell en el contenedor
+./dev.sh ./doc compila    # ejecuta algo dentro y sale
+./dev.sh --rebuild        # reconstruye la imagen antes
+```
+
+El `devcontainer.json` es spec estándar (sin nada propietario de VS Code), así
+que [DevPod](https://devpod.sh) levanta este mismo entorno igual de bien.
 
 ## Estructura
 
@@ -28,6 +43,7 @@ plantillas/<tipo>/      Plantillas a partir de las que se crean documentos
 documentos/<nombre>/    Un documento: <nombre>.tex, referencias.bib, imagenes/
 out/                    PDFs y auxiliares (no se versiona)
 doc                     La CLI
+dev.sh                  Entra al contenedor sin VS Code
 ```
 
 Cada documento se compila desde su propia carpeta, así que dentro del `.tex`
